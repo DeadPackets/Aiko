@@ -18,7 +18,6 @@ import {
 import * as Animatable from 'react-native-animatable';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import SplashScreen from 'react-native-splash-screen'
-import Swiper from 'react-native-swiper';
 
 //Acts
 import ActOne from './acts/one';
@@ -43,19 +42,18 @@ export default class App extends Component {
 	}
 
 	render() {
-		if (this.state.firstStart) {
 			return (
 				<View style={styles.container}>
+				<StatusBar barStyle="light-content"/>
 					<ActOne />
 				</View>
 			)
-		}
 	}
 }
 
 const styles = StyleSheet.create({
 	container: {
-		backgroundColor: '#F4FFFF',
+		backgroundColor: '#49446C',
 		flex: 1
 	},
 	mainTitle: {

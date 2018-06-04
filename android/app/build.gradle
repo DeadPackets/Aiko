@@ -137,7 +137,7 @@ android {
 }
 
 dependencies {
-    compile project(':react-native-sensors')
+    compile project(':react-native-sound')
     compile project(':react-native-device-info')
     compile project(':react-native-spinkit')
     compile project(':react-native-system-setting')
