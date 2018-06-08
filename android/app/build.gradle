@@ -93,6 +93,21 @@ def enableSeparateBuildPerCPUArchitecture = false
  */
 def enableProguardInReleaseBuilds = false
 
+def getPassword(String currentUser, String keyChain) {
+   def stdout = new ByteArrayOutputStream()
+   def stderr = new ByteArrayOutputStream()
+   exec {
+       commandLine 'security', '-q', 'find-generic-password', '-a', currentUser, '-s', keyChain, '-w'
+       standardOutput = stdout
+       errorOutput = stderr
+       ignoreExitValue true
+   }
+   //noinspection GroovyAssignabilityCheck
+      stdout.toString().trim()
+}
+
+ def pass = getPassword("deadpackets","android_keystore")
+
 android {
     compileSdkVersion 23
     buildToolsVersion "23.0.1"
@@ -100,13 +115,23 @@ android {
     defaultConfig {
         applicationId "com.aiko"
         minSdkVersion 16
-        targetSdkVersion 22
+        targetSdkVersion 23
         versionCode 1
         versionName "1.0"
         ndk {
             abiFilters "armeabi-v7a", "x86"
         }
     }
+
+    signingConfigs {
+        release {
+            storeFile file(MYAPP_RELEASE_STORE_FILE)
+            storePassword pass // Change this
+            keyAlias MYAPP_RELEASE_KEY_ALIAS
+            keyPassword pass // Change this
+        }
+    }
+
     splits {
         abi {
             reset()
@@ -119,6 +144,7 @@ android {
         release {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            signingConfig signingConfigs.release
         }
     }
     // applicationVariants are e.g. debug, release
@@ -137,14 +163,15 @@ android {
 }
 
 dependencies {
+    compile project(':react-native-push-notification')
+    compile project(':react-native-linear-gradient')
     compile project(':react-native-sound')
     compile project(':react-native-device-info')
     compile project(':react-native-spinkit')
     compile project(':react-native-system-setting')
-    compile project(':react-native-network-info')
     compile project(':react-native-contacts')
     compile project(':react-native-vector-icons')
-    compile project(':react-native-splash-screen')
+    compile project(':react-native-geocoder')
     compile fileTree(dir: "libs", include: ["*.jar"])
     compile "com.android.support:appcompat-v7:23.0.1"
     compile "com.facebook.react:react-native:+"  // From node_modules
@@ -156,3 +183,4 @@ task copyDownloadableDepsToLibs(type: Copy) {
     from configurations.compile
     into 'libs'
 }
+

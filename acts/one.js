@@ -9,6 +9,10 @@ import {
 	AsyncStorage,
 	Text,
 	ScrollView,
+	PushNotificationIOS,
+	AppState,
+	FlatList,
+	NetInfo,
 	View
 } from 'react-native';
 
@@ -23,6 +27,15 @@ import { systemWeights, iOSColors } from 'react-native-typography'
 //Utils
 import DeviceInfo from 'react-native-device-info';
 import Permissions from 'react-native-permissions';
+import Geocoder from 'react-native-geocoder'
+import PushNotification from 'react-native-push-notification';
+// var PushNotification = require('react-native-push-notification');
+PushNotification.configure({
+		onNotification: function(notification) {
+			notification.finish(PushNotificationIOS.FetchResult.NoData);
+		}
+})
+
 var Sound = require('react-native-sound');
 Sound.setCategory('Ambient');
 
@@ -38,6 +51,7 @@ export default class ActOne extends Component {
 			choices: [],
 			currentPart: '',
 			countPart: 0,
+			maxItems: 50,
 			history: [],
 			aikoActive: false,
 			userChoice: false,
@@ -179,8 +193,10 @@ export default class ActOne extends Component {
 					Permissions.request('location', {type: 'whenInUse'}).then((response) => {
 						if (response == 'authorized') {
 							AsyncStorage.setItem('locationPerm', JSON.stringify({given: true})).then(resolve);
+							this.setTrust(100);
 						} else {
 							AsyncStorage.setItem('locationPerm', JSON.stringify({given: false})).then(resolve);
+							this.setTrust(-50);
 						}
 					})
 				})
@@ -192,22 +208,44 @@ export default class ActOne extends Component {
 						let part;
 						if (res.given) {
 							navigator.geolocation.setRNConfiguration({skipPermissionRequests: true});
-							navigator.geolocation.getCurrentPosition((geo_location) => {
-								console.warn(geo_location)	
+							navigator.geolocation.getCurrentPosition((loc) => {
+								Geocoder.geocodePosition({lat: loc.coords.latitude, lng: loc.coords.longitude})
+								.then((ret) => {
+									part = ["Ah! I see it now.", `You live in ${ret[0].locality}, ${ret[0].country}!`, `Exactly on ${ret[0].streetName} ${"in " + (ret[0].subLocality || "some town")}!`, 'Awesome!', 'You trusted me...', 'Thanks.']
+									this.aikoSpeak(part, 2500, resolve);
+								})
+								.catch(() => {
+									part = ["Hm. Something went wrong.", "I can't process your location.", `I just know that your latitude is ${loc.coords.latitude},`, `And that your longitude is ${loc.coords.longitude}.`, "It's okay though!", "You trusted me.", "Thanks."];
+									this.aikoSpeak(part, 2500, resolve);
+								})
 							}, () => {
-								console.warn('fail')
+								part = ["Hm. Something went wrong.", "I can't get your location.", "It's okay though!", "You trusted me.", "Thanks."];
+								this.aikoSpeak(part, 2500, resolve);
 							})
-
-							part = ["Oh, you actually trusted me.", "Thanks, human!", "I'll show you my trick now."]
 						} else {
-							part = ["Oh, I see.", "You don't trust me with your location.", "That's okay...", "I never needed your permission anyway!"]
+							fetch('http://ip-api.com/json')
+							.then(response => response.json())
+							.then(responseJson => {
+								part = ["Oh, I see.", "You don't trust me with your location.", "That's okay...", "I never needed your permission anyway!", `You live in ${responseJson.city}, ${responseJson.country}!`, "Sorry for doing the trick anyway.", "I know it's hard to trust new people..."];
+								this.aikoSpeak(part, 2500, resolve);
+							})
+							.catch(() => {
+								part = ["Oh, I see.", "You don't trust me with your location.", "That's okay...", "I know it's hard to trust new people..."]
+								this.aikoSpeak(part, 2500, resolve);
+							})
 						}
-						this.aikoSpeak(part, 1500, resolve);
 					})
 				})
 			},
 			partTen: () => {
 				return new Promise((resolve) => {
+					AsyncStorage.getItem('locationPerm').then((response) => {
+						let res = JSON.parse(response);
+						let part;
+						
+							part = ["Test for condition"];
+							this.aikoSpeak(part, 1000, () => {});
+					})
 				})
 			}
 		}
@@ -221,6 +259,11 @@ export default class ActOne extends Component {
 			if (typeof item !== 'object') {
 				item = {text: item};
 			}
+			
+			if (this.state.script.length == this.state.maxItems) {
+				this.state.script.shift();
+			}
+
 			this.state.script.push(<UserMessage message={item.text} key={Math.random()} style={styles.userPicked} sender="You"></UserMessage>)
 			this.sentSound.play();
 			this.state.history.push({type: 'user', text: item.text});
@@ -229,15 +272,26 @@ export default class ActOne extends Component {
 		})
 	}
 
-	setScore(score) {
-		AsyncStorage.getItem('score').then((response) => {
+	setKindness(score) {
+		AsyncStorage.getItem('kindness').then((response) => {
 			let res = JSON.parse(response);
-			if (res.score) {
-				AsyncStorage.setItem('score', JSON.stringify({score: res.score + score}));
+			if (res !== null && res.score) {
+				AsyncStorage.setItem('kindness', JSON.stringify({score: res.score + score}));
 				this.setState({score: score + res.score});
 			} else {
-				AsyncStorage.setItem('score', JSON.stringify({score}));
+				AsyncStorage.setItem('kindness', JSON.stringify({score}));
 				this.setState({score});
+			}
+		})
+	}
+
+	setTrust(score) {
+		AsyncStorage.getItem('trust').then((response) => {
+			let res = JSON.parse(response);
+			if (res !== null) {
+				AsyncStorage.setItem('trust', JSON.stringify({trust: res.trust + score}));
+			} else {
+				AsyncStorage.setItem('trust', JSON.stringify({score: trust}));
 			}
 		})
 	}
@@ -249,7 +303,7 @@ export default class ActOne extends Component {
 				if (typeof item !== 'object') {
 					item = {text: item, score: 0};
 				}
-				this.state.choices.push(<Animatable.View animation="fadeIn" key={i} duration={2000}><Button title={item.text} buttonStyle={styles.choice} raised onPress={() => { this.setScore(item.score); cb(i);}}></Button></Animatable.View>)
+				this.state.choices.push(<Animatable.View animation="fadeInUp" key={i} duration={2000}><Button title={item.text} buttonStyle={styles.choice} onPress={() => { this.setKindness(item.score); cb(i);}}></Button></Animatable.View>)
 				this.setState({choices: this.state.choices});
 			})
 		}
@@ -264,8 +318,14 @@ export default class ActOne extends Component {
 
 				} else {
 					if (i == 0 && this.state.prev == 'user') {
+						if (this.state.script.length == this.state.maxItems) {
+							this.state.script.shift();
+						}
 						this.state.script.push(<AikoMessage message={part[i]} key={Math.random()} sender="Aiko"></AikoMessage>)
 					} else {
+						if (this.state.script.length == this.state.maxItems) {
+							this.state.script.shift();
+						}
 						this.state.script.push(<AikoRepeatingMessage message={part[i]} key={Math.random()}></AikoRepeatingMessage>)
 					}
 					this.recievedSound.play();
@@ -291,13 +351,14 @@ export default class ActOne extends Component {
 
 
 	componentDidMount() {
-		//TODO: History
+		//TODO:
 		let dev = true;
 		let startFrom = 0;
 		if (dev) {
 			AsyncStorage.setItem('countPart', '{}');
 			AsyncStorage.setItem('history', '{}');
-			AsyncStorage.setItem('score', '{}');
+			AsyncStorage.setItem('kindness', '{}');
+			AsyncStorage.setItem('trust', '{}');
 			this.playScene(startFrom);
 		} else {
 			AsyncStorage.getItem('history').then((result) => {
@@ -305,26 +366,53 @@ export default class ActOne extends Component {
 					AsyncStorage.getItem('countPart').then((jsonResult) => {
 						let historyParsed = JSON.parse(result);
 						let partCount = JSON.parse(jsonResult);
+						let length = historyParsed.length;
 
 						historyParsed.data.forEach((item, i) => {
-						if (item.type == 'aiko') {
-							if (this.state.prev == 'aiko') {
-								this.state.script.push(<AikoRepeatingMessage message={item.text} key={i} sender="Aiko"></AikoRepeatingMessage>)
-							} else {
-								this.state.script.push(<AikoMessage message={item.text} key={i} sender="Aiko"></AikoMessage>)
+							if (this.state.script.length == this.state.maxItems) {
+								this.state.script.shift();
 							}
-							this.setState({prev: 'aiko'})
-						} else if (item.type == 'user') {
-							this.state.script.push(<UserMessage message={item.text} key={i} style={styles.userPicked} sender="You"></UserMessage>)
-							this.setState({prev: 'user'})
-						}
-					})
+
+							if (item.type == 'aiko') {
+								if (this.state.prev == 'aiko') {
+									this.state.script.push(<AikoRepeatingMessage message={item.text} key={i} sender="Aiko"></AikoRepeatingMessage>)
+								} else {
+									this.state.script.push(<AikoMessage message={item.text} key={i} sender="Aiko"></AikoMessage>)
+								}
+								this.setState({prev: 'aiko'})
+							} else if (item.type == 'user') {
+								this.state.script.push(<UserMessage message={item.text} key={i} sender="You"></UserMessage>)
+								this.setState({prev: 'user'})
+							}
+						})
+
 						this.setState({script: this.state.script, history: historyParsed.data});
 						this.playScene(partCount.part);
 					})
 				} else {
 					this.playScene(0);
 				}
+			})
+		}
+		AppState.addEventListener('change', this._handleAppStateChange);
+	}
+
+	componentWillUnmount() {
+		AppState.removeEventListener('change', this._handleAppStateChange);
+	}
+
+	_handleAppStateChange(nextState) {
+		if (nextState == 'inactive' || nextState == 'background') {
+			let titles = ["Please come back soon!", "Where are you going?", "Are you coming back?", "Where did you go?", "Will you come back?", "Don't be gone for long!", "Miss you already."]
+			PushNotification.localNotification({
+				title: titles[Math.floor(Math.random()*titles.length)], 
+				soundName: 'default',
+			});
+
+			let scheduledTitles = ["I miss you, come back!", "Hey, it's been a while...", "Wanna chat?", "Hey! Come back!", "We haven't talked in a while...", "Come back, let's talk!"]
+			PushNotification.localNotificationSchedule({
+				message: scheduledTitles[Math.floor(Math.random()*scheduledTitles.length)],
+				date: new Date(Date.now() + (14400 * 1000)) // in 4 hours
 			})
 		}
 	}
@@ -334,11 +422,11 @@ export default class ActOne extends Component {
 				<View style={styles.container}>
 				<ScrollView style={styles.forefront} contentContainerStyle={styles.contentView} ref={ref => this.scrollView = ref} onContentSizeChange={(contentWidth, contentHeight)=>{ this.scrollView.scrollToEnd({animated: true}); }}>
 				  {this.state.script}
-				   	<Display enable={this.state.aikoActive} style={styles.spinnerView} enter="fadeIn" exit="fadeOut" defaultDuration={500}>
-				 		<Spinner type="ThreeBounce" size={70} color="#333"/>
-						 <Text>{this.state.score}</Text>
+				   	<Display enable={this.state.aikoActive} style={styles.spinnerView} enter="fadeInUp" exit="fadeOut" defaultDuration={500}>
+				 		<Spinner type="ThreeBounce" size={70} color="#141e2d"/>
+						 <Text>{this.state.score}  {this.state.script.length}</Text>
 				 	</Display>
-					 <Display enable={!this.state.aikoActive} style={styles.spinnerView} enter="fadeIn" exit="fadeOut" defaultDuration={500}>
+					 <Display enable={!this.state.aikoActive} style={styles.spinnerView} enter="fadeInUp" exit="fadeOutDown" defaultDuration={500}>
 					 	<Choices choices={this.state.choices} />
 				 	</Display>
 					 <View style={styles.space}></View>
@@ -351,11 +439,10 @@ export default class ActOne extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#49446C'
   },
   forefront: {
     flex: 1,
-    backgroundColor: '#DCDCDA',
+    backgroundColor: '#d9dce1',
     marginLeft: 10,
     marginRight: 10,
     marginTop: 23,
@@ -363,7 +450,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 3,
     borderStyle: 'dashed',
-    borderColor: '#b8b8b8',
+    borderColor: '#a7b1b8',
     flexDirection: 'column'
   },
   contentView: {
@@ -410,7 +497,7 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   choice: {
-	backgroundColor: "#49446C",
+	backgroundColor: "#092138",
 	height: 45,
 	borderColor: "transparent",
 	borderWidth: 0,

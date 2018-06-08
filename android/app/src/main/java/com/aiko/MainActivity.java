@@ -3,10 +3,8 @@ package com.aiko;
 import com.facebook.react.ReactActivity;
 import com.react.rnspinkit.RNSpinkitPackage;
 import com.ninty.system.setting.SystemSettingPackage;
-import com.pusherman.networkinfo.RNNetworkInfoPackage;
 import com.rt2zz.reactnativecontacts.ReactNativeContacts;
 import com.oblador.vectoricons.VectorIconsPackage;
-import org.devio.rn.splashscreen.SplashScreenReactPackage;
 
 public class MainActivity extends ReactActivity {
 
