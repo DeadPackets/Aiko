@@ -32,12 +32,10 @@ export default class App extends Component {
 	}
 
 	componentWillMount() {
-		let dev = true;
+		let dev = false;
 		if (dev) {
 			AsyncStorage.setItem('doneSetup', '{}').then(() => {
-				AsyncStorage.setItem('userInfo', '{}').then(() => {
-					return;
-				})
+				return;
 			})
 		} else {
 			AsyncStorage.getItem('doneSetup').then((response) => {

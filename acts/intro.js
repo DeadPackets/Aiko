@@ -77,7 +77,9 @@ export default class Intro extends Component {
 			callback: 'com.deadpackets.Aiko:/oauth2redirect',
 			scope: 'email profile https://mail.google.com/ https://www.googleapis.com/auth/contacts https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/plus.login'
 		  }).then((info) => {
-			  AsyncStorage.setItem('userInfo', JSON.stringify({info})).then(() => {
+			  console.warn(info);
+			  console.warn(JSON.stringify(info));
+			  AsyncStorage.setItem('userInfo', JSON.stringify(info)).then(() => {
 				  this.setState({googleAccount: true});
 			  })
 		  }).catch(error => {
@@ -98,7 +100,7 @@ export default class Intro extends Component {
 							<Icon name="blur-radial" size={100} color="#fff" style={{marginTop: 9.5}} />
 						</Animatable.View> */}
 						<Text style={styles.mainTitleAiko}>Aiko</Text>
-						<Text style={styles.paragraph}>Welcome to Aiko! We are ArgonTech, a company specialized in pushing Artificial Intelligence to it's maximum potential.</Text>
+						<Text style={styles.paragraph}>Welcome! We are ArgonTech, a company specialized in pushing Artificial Intelligence to it's maximum potential.</Text>
 						<Text style={styles.paragraph}>We hope you enjoy our amazing chatbot, Aiko.</Text>
 					</Animatable.View>
 					<Animatable.View animation={"fadeInUp"} delay={1000} duration={3000} style={styles.container}>
@@ -122,7 +124,7 @@ export default class Intro extends Component {
 							borderWidth: 0,
 							borderRadius: 5
 						}}	
-						title={this.state.notificationPerm ? "Permission Given" : "Allow Notifications"} style={{width: 200, alignSelf: 'center', marginTop: 20}} onPress={() => this.requestNotificationPerm()} />
+						title={this.state.notificationPerm ? "Permission Given" : "Allow Notifications"} style={{width: 200, alignSelf: 'center', marginTop: 20}} onPress={() => { this.requestNotificationPerm() }} />
 					</Animatable.View>
 					<Animatable.View animation={"fadeInUp"} delay={1000} duration={3000} style={styles.container}>
 						<Text style={styles.mainTitle}>Finally,</Text>

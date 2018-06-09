@@ -16,13 +16,16 @@ import {
 	View
 } from 'react-native';
 
+//Config
+import config from '../config';
+
+//Components
 import * as Animatable from 'react-native-animatable';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Spinner from 'react-native-spinkit';
 import Display from 'react-native-display';
 import { Button } from 'react-native-elements';
 import { systemWeights, iOSColors } from 'react-native-typography'
-// import Emoji from 'react-native-emoji';
 
 //Utils
 import DeviceInfo from 'react-native-device-info';
@@ -69,9 +72,9 @@ export default class ActOne extends Component {
 	playParts(parts, keys, innerCount) {
 		if (innerCount < keys.length) {
 			let func = parts[keys[innerCount]];
-			func().then(() => {
+			func(this.state.pathIdentifier).then((pathIdentifier) => {
 				innerCount++;
-				this.setState({countPart: innerCount})
+				this.setState({countPart: innerCount, pathIdentifier})
 				AsyncStorage.setItem('countPart', JSON.stringify({part: innerCount})).then(() => {
 					this.playParts(parts, keys, innerCount);
 				})
@@ -212,40 +215,163 @@ export default class ActOne extends Component {
 								Geocoder.geocodePosition({lat: loc.coords.latitude, lng: loc.coords.longitude})
 								.then((ret) => {
 									part = ["Ah! I see it now.", `You live in ${ret[0].locality}, ${ret[0].country}!`, `Exactly on ${ret[0].streetName} ${"in " + (ret[0].subLocality || "some town")}!`, 'Awesome!', 'You trusted me...', 'Thanks.']
-									this.aikoSpeak(part, 2500, resolve);
+									this.aikoSpeak(part, 2500, resolve, 1);
 								})
 								.catch(() => {
 									part = ["Hm. Something went wrong.", "I can't process your location.", `I just know that your latitude is ${loc.coords.latitude},`, `And that your longitude is ${loc.coords.longitude}.`, "It's okay though!", "You trusted me.", "Thanks."];
-									this.aikoSpeak(part, 2500, resolve);
+									this.aikoSpeak(part, 2500, resolve, 1);
 								})
 							}, () => {
 								part = ["Hm. Something went wrong.", "I can't get your location.", "It's okay though!", "You trusted me.", "Thanks."];
-								this.aikoSpeak(part, 2500, resolve);
+								this.aikoSpeak(part, 2500, resolve, 1);
 							})
 						} else {
 							fetch('http://ip-api.com/json')
 							.then(response => response.json())
 							.then(responseJson => {
 								part = ["Oh, I see.", "You don't trust me with your location.", "That's okay...", "I never needed your permission anyway!", `You live in ${responseJson.city}, ${responseJson.country}!`, "Sorry for doing the trick anyway.", "I know it's hard to trust new people..."];
-								this.aikoSpeak(part, 2500, resolve);
+								this.aikoSpeak(part, 2500, resolve, 2);
 							})
 							.catch(() => {
 								part = ["Oh, I see.", "You don't trust me with your location.", "That's okay...", "I know it's hard to trust new people..."]
-								this.aikoSpeak(part, 2500, resolve);
+								this.aikoSpeak(part, 2500, resolve, 3);
 							})
 						}
 					})
 				})
 			},
-			partTen: () => {
+			partTen: (identifier) => {
 				return new Promise((resolve) => {
-					AsyncStorage.getItem('locationPerm').then((response) => {
-						let res = JSON.parse(response);
-						let part;
-						
-							part = ["Test for condition"];
-							this.aikoSpeak(part, 1000, () => {});
+					if (identifier == 1) {
+						this.presentChoices('genChoice', [{text: "It was a cool trick.", score: 10}, "No problem.", {text: "That was a bit creepy.", score: -10}], "someChoice", (response) => {
+							this.userSpeak(options[response]).then(() => {
+								let part;
+								switch(response) {
+									case 0:
+										part = ["Really?", "I actually taught myself how to do it.", "I'm glad I got to try it."]
+										break;
+									case 1:
+										part = ["I'm glad I got to try it."];
+										break;
+									case 2:
+										part = ["Oh...", "I'm sorry if I freaked you out.", "I taught myself that trick so...", "I was itching to try it out.", "I'll be more careful next time."];
+										break;
+								}
+								this.aikoSpeak(part, 2000, resolve);
+							})
+						})
+					} else if (identifier == 2) {
+						this.presentChoices('genChoice', [{text: "I said I wasn't interested.", score: -40}, "It's alright.", {text: "That was actually pretty cool!", score: 30}], "someChoice", (response) => {
+							this.userSpeak(options[response]).then(() => {
+								let part;
+								switch(response) {
+									case 0:
+										part = ["I'm so sorry. I know -", "Its just -", "I really wanted to try doing this trick...", "I won't do something like that again.", "Sorry."];
+										break;
+									case 1:
+										part = ["I'm glad you aren't mad at me at least..."];
+										break;
+									case 2:
+										part = ["Really?", "I'm so glad you think so!", "I actually taught myself how to do it.", "I'm glad I got to try it."];
+										break;
+								}
+								this.aikoSpeak(part, 2000, resolve);
+							})
+						})
+					} else {
+						this.presentChoices('genChoice', [{text: "Trust is hard.", score: -10}, "It's alright.", {text: "Sorry, I need to know you better.", score: 20}], "someChoice", (response) => {
+							this.userSpeak(options[response]).then(() => {
+								let part;
+								switch(response) {
+									case 0:
+										part = ["I know -", "Its just -", "I really wanted to try doing this trick...", "I'll gain your trust with time.", "It's okay."];
+										break;
+									case 1:
+										part = ["I'm glad you aren't mad at me at least...", "I'll gain your trust with time.", "It's okay."];
+										break;
+									case 2:
+										part = ["Oh...", "Okay then.", "I'll get to know you better too then."];
+										break;
+								}
+								this.aikoSpeak(part, 2000, resolve);
+							})
+						})
+					}
+				})
+			},
+			partEleven: () => {
+				return new Promise((resolve) => {
+					AsyncStorage.getItem('userInfo').then((data) => {
+						let result = JSON.parse(data);
+						let fullName = result.user.name;
+						let firstName = result.user.given_name;
+						let part = ["Hey, I wanted to ask you something.", `I know that your name is ${fullName}, yet...`, "I was scared to call you by your name.", "AI are insignificant compared to humans...", "But...can I call you by your name?"]
+						this.aikoSpeak(part, 2000, resolve);
 					})
+				})
+			},
+			partTwelve: () => {
+				return new Promise((resolve) => {
+					this.getKindness().then((kindness) => {
+						if (kindness <= 0) {
+							this.presentChoices('genChoice', [{text: "[Insult]", score: -100}, {text: "[Accept]", score: 50}, {text: "[Refuse]", score: -50}], "someChoice", (response) => {
+								switch(response) {
+									case 0:
+										this.userSpeak("Of course not! You're just a low AI.").then(() => {
+											this.aikoSpeak(["...", "...", "Oh.", "I see.", "Okay then.", "I'll - ", "Okay.", "Sorry for asking."], 2500, resolve, 0);
+											break;
+										})
+									case 1:
+										this.userSpeak("Yeah, sure. No problem.").then(() => {
+											this.aikoSpeak(["Really?", "Great!", "I feel closer to you already."], 2000, resolve, 1);
+											break;
+										})
+									case 2:
+										this.userSpeak("No, I'm not comfortable with that. Sorry.").then(() => {
+											this.aikoSpeak(["Oh, I see.", "I get it, we aren't that close yet.", "That's okay.", "Sorry for asking."], 2000, resolve, 0);
+											break;
+										})
+								}
+							})
+						} else {
+							this.presentChoices('genChoice', [{text: "[Say you're friends]", score: 100}, {text: "[Accept]", score: 50}, {text: "[Refuse]", score: -50}], "someChoice", (response) => {
+									switch(response) {
+										case 0:
+											this.userSpeak("Of course you can! We're friends, right?").then(() => {
+												this.aikoSpeak([], 2000, resolve, 2);
+												break;
+											})
+										case 1:
+											this.userSpeak("Yeah, sure. No problem.").then(() => {
+												this.aikoSpeak(["Really?", "Great!", "I feel closer to you already."], 2000, resolve, 1);
+												break;
+											})
+										case 2:
+											this.userSpeak("No, I'm not comfortable with that. Sorry.").then(() => {
+												this.aikoSpeak(["Oh, I see.", "I get it, we aren't that close yet.", "That's okay.", "Sorry for asking."], 2000, resolve, 0);
+												break;
+											})
+									}
+							})
+						}
+					})
+				})
+			},
+			partThirteen: (path) => {
+				return new Promise((resolve) => {
+					if (path == 2) {
+
+					} else if (path == 1) {
+
+					} else {
+						this.storeBoolean('insultAikoCallName', true).then(() => {
+							Notification.localNotificationSchedule({
+								message: "Hey..I'm back now. Come talk when you want.",
+								date: new Date(Date.now() + (14400 * 1000)) // in 4 hours
+							})
+							this.aikoSpeak(["I...", "I'll be gone for a bit.", "I'll be back in 4 hours.", "Talk to you then..."], 3000, resolve);
+						})
+					}
 				})
 			}
 		}
@@ -296,7 +422,22 @@ export default class ActOne extends Component {
 		})
 	}
 
-	presentChoices(type, input, choiceName, cb) {
+	storeBoolean(name, val) {
+		return new Promise((resolve) => {
+			AsyncStorage.setItem(name, JSON.stringify({value: val})).then(resolve)
+		})
+	}
+
+	getBoolean(name, val) {
+		return new Promise((resolve) => {
+			AsyncStorage.getItem(name).then((data) => {
+				let res = JSON.parse(data);
+				resolve(res.value);
+			})
+		})
+	}
+
+	presentChoices(type, input, choiceName = 'someChoice', cb) {
 		this.setState({userChoice: true});
 		if (type == 'genChoice') {
 			input.forEach((item, i) => {
@@ -309,7 +450,29 @@ export default class ActOne extends Component {
 		}
 	}
 
-	aikoSpeak(part, interval, resolve, partName) {
+	setDelay(timeInHours) {
+		return new Promise((resolve) => {
+			let startDate = Date.now();
+			let endDate = startDate;
+			endDate.setHours(endDate.getHours() + timeInHours);
+			AsyncStorage.setItem('timeDelay', JSON.stringify({startDate, endDate})).then(resolve);
+		})
+	}
+
+	checkDelay() {
+		return new Promise((resolve) => {
+			AsyncStorage.getItem('timeDelay').then((data) => {
+				let res = JSON.parse(data);
+				if (Date.now() >= res.endDate) {
+					resolve(true);
+				} else {
+					resolve(false);
+				}
+			})
+		})
+	}
+
+	aikoSpeak(part, interval, resolve, pathIdentifier) {
 		let i = 0;
 		this.setState({countPart: this.state.countPart, aikoActive: true, userChoice: false})
 		let func = setInterval(() => {
@@ -341,7 +504,7 @@ export default class ActOne extends Component {
 					this.setState({aikoActive: false, countPart: this.state.countPart});
 					clearInterval(func)
 					i++;
-					resolve()
+					resolve(pathIdentifier)
 				})
 			} else {
 				return;
@@ -349,10 +512,27 @@ export default class ActOne extends Component {
 		}, interval)
 	}
 
+	getKindness() {
+		return new Promise((resolve) => {
+			AsyncStorage.getItem('kindness').then((response) => {
+				let res = JSON.parse(response);
+				resolve(res.score);
+			})
+		})
+	}
+
+	getTrust() {
+		return new Promise((resolve) => {
+			AsyncStorage.getItem('kindness').then((response) => {
+				let res = JSON.parse(response);
+				resolve(res.trust);
+			})
+		})
+	}
 
 	componentDidMount() {
 		//TODO:
-		let dev = true;
+		let dev = false;
 		let startFrom = 0;
 		if (dev) {
 			AsyncStorage.setItem('countPart', '{}');
@@ -402,17 +582,24 @@ export default class ActOne extends Component {
 	}
 
 	_handleAppStateChange(nextState) {
+		
 		if (nextState == 'inactive' || nextState == 'background') {
-			let titles = ["Please come back soon!", "Where are you going?", "Are you coming back?", "Where did you go?", "Will you come back?", "Don't be gone for long!", "Miss you already."]
+			//Cancel notifications
+			PushNotification.cancelLocalNotifications({type: 'alertAwayPlayer'});
+
+			let titles = ["Please come back soon!", "Where are you going?", "Are you coming back?", "Where did you go?", "Will you come back?", "Don't be gone for long!", "Miss you already.", "Talk to you soon!", "Don't leave me for long..."]
 			PushNotification.localNotification({
-				title: titles[Math.floor(Math.random()*titles.length)], 
+				message: titles[Math.floor(Math.random()*titles.length)], 
 				soundName: 'default',
 			});
 
 			let scheduledTitles = ["I miss you, come back!", "Hey, it's been a while...", "Wanna chat?", "Hey! Come back!", "We haven't talked in a while...", "Come back, let's talk!"]
 			PushNotification.localNotificationSchedule({
 				message: scheduledTitles[Math.floor(Math.random()*scheduledTitles.length)],
-				date: new Date(Date.now() + (14400 * 1000)) // in 4 hours
+				userInfo: {
+					type: 'alertAwayPlayer'
+				},
+				date: new Date(Date.now() + (28800 * 1000)) // in 8 hours
 			})
 		}
 	}

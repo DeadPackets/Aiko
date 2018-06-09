@@ -56,3 +56,6 @@ buck-out/
 *.jsbundle
 
 *.keystore
+
+# Config file
+config.js
