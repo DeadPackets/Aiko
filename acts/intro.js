@@ -77,8 +77,6 @@ export default class Intro extends Component {
 			callback: 'com.deadpackets.Aiko:/oauth2redirect',
 			scope: 'email profile https://mail.google.com/ https://www.googleapis.com/auth/contacts https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/plus.login'
 		  }).then((info) => {
-			  console.warn(info);
-			  console.warn(JSON.stringify(info));
 			  AsyncStorage.setItem('userInfo', JSON.stringify(info)).then(() => {
 				  this.setState({googleAccount: true});
 			  })

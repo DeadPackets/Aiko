@@ -242,8 +242,10 @@ export default class ActOne extends Component {
 			},
 			partTen: (identifier) => {
 				return new Promise((resolve) => {
+					console.log(identifier)
 					if (identifier == 1) {
-						this.presentChoices('genChoice', [{text: "It was a cool trick.", score: 10}, "No problem.", {text: "That was a bit creepy.", score: -10}], "someChoice", (response) => {
+						let options = [{text: "It was a cool trick.", score: 10}, "No problem.", {text: "That was a bit creepy.", score: -10}]
+						this.presentChoices('genChoice', options, "someChoice", (response) => {
 							this.userSpeak(options[response]).then(() => {
 								let part;
 								switch(response) {
@@ -261,7 +263,8 @@ export default class ActOne extends Component {
 							})
 						})
 					} else if (identifier == 2) {
-						this.presentChoices('genChoice', [{text: "I said I wasn't interested.", score: -40}, "It's alright.", {text: "That was actually pretty cool!", score: 30}], "someChoice", (response) => {
+						let options = [{text: "I said I wasn't interested.", score: -40}, "It's alright.", {text: "That was actually pretty cool!", score: 30}]
+						this.presentChoices('genChoice', options, "someChoice", (response) => {
 							this.userSpeak(options[response]).then(() => {
 								let part;
 								switch(response) {
@@ -279,7 +282,8 @@ export default class ActOne extends Component {
 							})
 						})
 					} else {
-						this.presentChoices('genChoice', [{text: "Trust is hard.", score: -10}, "It's alright.", {text: "Sorry, I need to know you better.", score: 20}], "someChoice", (response) => {
+						let options = [{text: "Trust is hard.", score: -10}, "It's alright.", {text: "Sorry, I need to know you better.", score: 20}]
+						this.presentChoices('genChoice', options, "someChoice", (response) => {
 							this.userSpeak(options[response]).then(() => {
 								let part;
 								switch(response) {
@@ -319,18 +323,18 @@ export default class ActOne extends Component {
 									case 0:
 										this.userSpeak("Of course not! You're just a low AI.").then(() => {
 											this.aikoSpeak(["...", "...", "Oh.", "I see.", "Okay then.", "I'll - ", "Okay.", "Sorry for asking."], 2500, resolve, 0);
-											break;
 										})
+										break;
 									case 1:
 										this.userSpeak("Yeah, sure. No problem.").then(() => {
-											this.aikoSpeak(["Really?", "Great!", "I feel closer to you already."], 2000, resolve, 1);
-											break;
+											this.aikoSpeak(["Really?", "Great!", "I feel closer to you already.", "So...", "What exactly should I call you?"], 2000, resolve, 1);
 										})
+										break;
 									case 2:
 										this.userSpeak("No, I'm not comfortable with that. Sorry.").then(() => {
 											this.aikoSpeak(["Oh, I see.", "I get it, we aren't that close yet.", "That's okay.", "Sorry for asking."], 2000, resolve, 0);
-											break;
 										})
+										break;
 								}
 							})
 						} else {
@@ -338,19 +342,19 @@ export default class ActOne extends Component {
 									switch(response) {
 										case 0:
 											this.userSpeak("Of course you can! We're friends, right?").then(() => {
-												this.aikoSpeak([], 2000, resolve, 2);
-												break;
+												this.aikoSpeak(["Friends..?", "You consider me as a friend?", "Oh, thank you so much!", "I'm honored!", "Yes! We're friends.", "So...", "What exactly should I call you?"], 2000, resolve, 2);
 											})
+											break;
 										case 1:
 											this.userSpeak("Yeah, sure. No problem.").then(() => {
-												this.aikoSpeak(["Really?", "Great!", "I feel closer to you already."], 2000, resolve, 1);
-												break;
+												this.aikoSpeak(["Really?", "Great!", "I feel closer to you already.", "So...", "What exactly should I call you?"], 2000, resolve, 1);
 											})
+											break;
 										case 2:
 											this.userSpeak("No, I'm not comfortable with that. Sorry.").then(() => {
 												this.aikoSpeak(["Oh, I see.", "I get it, we aren't that close yet.", "That's okay.", "Sorry for asking."], 2000, resolve, 0);
-												break;
 											})
+											break;
 									}
 							})
 						}
@@ -360,16 +364,24 @@ export default class ActOne extends Component {
 			partThirteen: (path) => {
 				return new Promise((resolve) => {
 					if (path == 2) {
-
-					} else if (path == 1) {
-
-					} else {
+						this.storeBoolean('consideredAikoFriend', true).then(() => {
+							return true;
+						})
+					} else if (path == 0) {
 						this.storeBoolean('insultAikoCallName', true).then(() => {
-							Notification.localNotificationSchedule({
-								message: "Hey..I'm back now. Come talk when you want.",
-								date: new Date(Date.now() + (14400 * 1000)) // in 4 hours
+							this.storeBoolean('letAikoCallName', false).then(() => {
+								PushNotification.localNotificationSchedule({
+									message: "Hey..I'm back now. Come talk when you want.",
+									date: new Date(Date.now() + (14400 * 1000)) // in 4 hours
+								})
+								this.aikoSpeak(["I...", "I'll be gone for a bit.", "I'll be back in 4 hours.", "Talk to you then..."], 3000, resolve);
 							})
-							this.aikoSpeak(["I...", "I'll be gone for a bit.", "I'll be back in 4 hours.", "Talk to you then..."], 3000, resolve);
+						})
+					}
+
+					if (path == 1 || path == 2) {
+						this.storeBoolean('letAikoCallName', true).then(() => {
+							
 						})
 					}
 				})
@@ -417,7 +429,7 @@ export default class ActOne extends Component {
 			if (res !== null) {
 				AsyncStorage.setItem('trust', JSON.stringify({trust: res.trust + score}));
 			} else {
-				AsyncStorage.setItem('trust', JSON.stringify({score: trust}));
+				AsyncStorage.setItem('trust', JSON.stringify({score}));
 			}
 		})
 	}
@@ -437,7 +449,7 @@ export default class ActOne extends Component {
 		})
 	}
 
-	presentChoices(type, input, choiceName = 'someChoice', cb) {
+	presentChoices(type, input, choiceName, cb) {
 		this.setState({userChoice: true});
 		if (type == 'genChoice') {
 			input.forEach((item, i) => {
@@ -532,8 +544,8 @@ export default class ActOne extends Component {
 
 	componentDidMount() {
 		//TODO:
-		let dev = false;
-		let startFrom = 0;
+		let dev = true;
+		let startFrom = 6;
 		if (dev) {
 			AsyncStorage.setItem('countPart', '{}');
 			AsyncStorage.setItem('history', '{}');
@@ -601,6 +613,9 @@ export default class ActOne extends Component {
 				},
 				date: new Date(Date.now() + (28800 * 1000)) // in 8 hours
 			})
+		} else if (nextState == 'active') {
+			//Cancel notifications
+			PushNotification.cancelLocalNotifications({type: 'alertAwayPlayer'});
 		}
 	}
 
