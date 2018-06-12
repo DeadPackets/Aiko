@@ -1,4 +1,4 @@
-package com.aiko;
+package com.deadpackets.aiko;
 
 import android.app.Application;
 

@@ -7,6 +7,7 @@ import {
 	Platform,
 	StyleSheet,
 	AsyncStorage,
+	Linking,
 	Alert,
 	Text,
 	View
@@ -38,7 +39,7 @@ export default class Intro extends Component {
 			this.setState({notificationPerm: true});
 		}
 	}
-
+		
 	requestNotificationPerm() {
 		Permissions.request('notification').then((response) => {
 			switch (response) {
@@ -74,7 +75,7 @@ export default class Intro extends Component {
 	signIn() {
 		google({
 			appId: '478550260000-3522jpjd5r00i1jdug4u3kt539c41ue6.apps.googleusercontent.com',
-			callback: 'com.deadpackets.Aiko:/oauth2redirect',
+			callback: 'com.deadpackets.aiko:/oauth2redirect',
 			scope: 'email profile https://mail.google.com/ https://www.googleapis.com/auth/contacts https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/plus.login'
 		  }).then((info) => {
 			  AsyncStorage.setItem('userInfo', JSON.stringify(info)).then(() => {
@@ -102,13 +103,13 @@ export default class Intro extends Component {
 						<Text style={styles.paragraph}>We hope you enjoy our amazing chatbot, Aiko.</Text>
 					</Animatable.View>
 					<Animatable.View animation={"fadeInUp"} delay={1000} duration={3000} style={styles.container}>
-						<Text style={styles.mainTitle}>Enjoy!</Text>Text>
+						<Text style={styles.mainTitle}>Enjoy!</Text>
 						<Text style={styles.paragraph}>Aiko is our state of the art chatbot AI that will interact with you in a realistic way that makes you feel like you are talking to a real person!</Text>
 						<Text style={styles.paragraph}>With built in abilities to understand conversations, Aiko can understand your emotions and tone of voice and respond accordingly.</Text>
 						<Text style={styles.paragraph}>And now with her being integrated into your mobile device, Aiko can understand the world around you even better now.</Text>
 					</Animatable.View>
 					<Animatable.View animation={"fadeInUp"} delay={1000} duration={3000} style={styles.container}>
-						<Text style={styles.mainTitle}>Privacy first.</Text>Text>
+						<Text style={styles.mainTitle}>Privacy first.</Text>
 						<Text style={styles.paragraph}>All the information that Aiko gathers about you is NEVER sent out of the phone. It is purely used to improve your experience with Aiko!</Text>
 						<Text style={styles.paragraph}>Also, when Aiko asks for a permission (Location, for example.) it is completely okay for you to reject. Aiko will adapt to your choices.</Text>
 					</Animatable.View>
@@ -120,9 +121,10 @@ export default class Intro extends Component {
 							backgroundColor: "#535e69",
 							borderColor: "transparent",
 							borderWidth: 0,
+							marginTop: 20,
 							borderRadius: 5
 						}}	
-						title={this.state.notificationPerm ? "Permission Given" : "Allow Notifications"} style={{width: 200, alignSelf: 'center', marginTop: 20}} onPress={() => { this.requestNotificationPerm() }} />
+						title={this.state.notificationPerm ? "Permission Given" : "Allow Notifications"} style={{width: 200, alignSelf: 'center'}} onPress={() => { this.requestNotificationPerm() }} />
 					</Animatable.View>
 					<Animatable.View animation={"fadeInUp"} delay={1000} duration={3000} style={styles.container}>
 						<Text style={styles.mainTitle}>Finally,</Text>
@@ -132,10 +134,11 @@ export default class Intro extends Component {
 							backgroundColor: "#bc4031",
 							borderColor: "transparent",
 							borderWidth: 0,
+							marginTop: 40,
 							borderRadius: 5
 						}}	
 						title={this.state.googleAccount ? "Logged In" : "Login with Google"}   
-						style={{width: 200, alignSelf: 'center', marginTop: 40}} onPress={() => this.signIn()} />
+						style={{width: 200, alignSelf: 'center'}} onPress={() => this.signIn()} />
 					</Animatable.View>
 		  		</Swiper>
 		)

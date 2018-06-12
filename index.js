@@ -62,7 +62,7 @@ export default class App extends Component {
 			return (
 				<LinearGradient colors={['#6497b1', '#011f4b']} style={styles.container}>
 				<SafeAreaView style={styles.container}>
-				<StatusBar barStyle="light-content"/>
+				<StatusBar barStyle="light-content" backgroundColor="#6497b1" />
 					{item}
 				</SafeAreaView>
 				</LinearGradient>

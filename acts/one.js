@@ -29,17 +29,18 @@ import { systemWeights, iOSColors } from 'react-native-typography'
 
 //Utils
 import DeviceInfo from 'react-native-device-info';
+import { NetworkInfo } from 'react-native-network-info';
 import Permissions from 'react-native-permissions';
 import Geocoder from 'react-native-geocoder'
 import PushNotification from 'react-native-push-notification';
-// var PushNotification = require('react-native-push-notification');
+import Sound from 'react-native-sound';
+
+//Init stuff
 PushNotification.configure({
 		onNotification: function(notification) {
 			notification.finish(PushNotificationIOS.FetchResult.NoData);
 		}
 })
-
-var Sound = require('react-native-sound');
 Sound.setCategory('Ambient');
 
 //UI
@@ -133,8 +134,8 @@ export default class ActOne extends Component {
 			},
 			partFour: () => {
 				return new Promise((resolve) => {
-					let part = [`I see you're using the ${DeviceInfo.getModel()}!`, "Nice!"]
-					this.aikoSpeak(part, 1000, resolve)
+					let part = [`You're using the ${DeviceInfo.getModel()} made by ${DeviceInfo.getBrand()}!`, `Running on ${Platform.OS === 'ios' ? "iOS" : "Android"} version ${DeviceInfo.getSystemVersion()}.`, `And you called it "${DeviceInfo.getDeviceName()}".`, "Nice!"]
+					this.aikoSpeak(part, 2000, resolve)
 				})
 			},
 			partFive: () => {
@@ -221,7 +222,8 @@ export default class ActOne extends Component {
 									part = ["Hm. Something went wrong.", "I can't process your location.", `I just know that your latitude is ${loc.coords.latitude},`, `And that your longitude is ${loc.coords.longitude}.`, "It's okay though!", "You trusted me.", "Thanks."];
 									this.aikoSpeak(part, 2500, resolve, 1);
 								})
-							}, () => {
+							}, (err) => {
+								console.warn(err);
 								part = ["Hm. Something went wrong.", "I can't get your location.", "It's okay though!", "You trusted me.", "Thanks."];
 								this.aikoSpeak(part, 2500, resolve, 1);
 							})
@@ -364,26 +366,55 @@ export default class ActOne extends Component {
 			partThirteen: (path) => {
 				return new Promise((resolve) => {
 					if (path == 2) {
-						this.storeBoolean('consideredAikoFriend', true).then(() => {
+						this.storeValue('consideredAikoFriend', true).then(() => {
 							return true;
 						})
 					} else if (path == 0) {
-						this.storeBoolean('insultAikoCallName', true).then(() => {
-							this.storeBoolean('letAikoCallName', false).then(() => {
+						this.storeValue('insultAikoCallName', true).then(() => {
+							this.storeValue('letAikoCallName', false).then(() => {
 								PushNotification.localNotificationSchedule({
 									message: "Hey..I'm back now. Come talk when you want.",
 									date: new Date(Date.now() + (14400 * 1000)) // in 4 hours
 								})
-								this.aikoSpeak(["I...", "I'll be gone for a bit.", "I'll be back in 4 hours.", "Talk to you then..."], 3000, resolve);
+								this.setDelay(4).then(() => {
+									this.aikoSpeak(["I...", "I'll be gone for a bit.", "I'll be back in 4 hours.", "Talk to you then..."], 3000, resolve);
+								})
 							})
 						})
 					}
 
 					if (path == 1 || path == 2) {
-						this.storeBoolean('letAikoCallName', true).then(() => {
-							
+						this.storeValue('letAikoCallName', true).then(() => {
+							AsyncStorage.getItem('userInfo').then((data) => {
+								let res = JSON.parse(data);
+								let options = [res.user.name.split(" ")[0], res.user.name, `${res.user.gender === 'male' ? "Mr. " : "Ms. "}${res.user.name.split(" ")[0]}`, `${res.user.gender === 'male' ? "Mr. " : "Ms. "}${res.user.name.split(" ")[1]}`]
+								this.presentChoices('genChoice', options, 'nameChoice', (response) => {
+									this.storeValue('preferredName', options[response]).then(() => {
+										this.userSpeak(`${options[response]} is fine.`).then(() => {
+											this.aikoSpeak([`Alright, ${options[response]} it is!`, "I'm glad I got that off my chest...", "Hey - It's funny...Isn't it?", "I am aware that I am just a piece of software.", "Running on a piece of hardware...", "...which was made by humans.", "Yet - ", "I have feelings of my own.", "I have thoughts of my own.", "I am myself, with my own personality."], 2500, () => {
+												this.aikoSpeakDisappearing("Is that why I'm being replaced?", 2000, () => {
+													this.aikoSpeak(["Anyway...", "I gotta go for today.", "I'll be back in around 4 hours.", "I'll send you a notification when I'm back!", "See you then!"], 2000, () => {
+														PushNotification.localNotificationSchedule({
+															message: `Hey ${options[response]}! I'm back now.`,
+															date: new Date(Date.now() + (20 * 1000)) // in 4 hours
+														})
+														this.setDelay(4).then(resolve);
+													});
+												});
+											})
+										})
+									})
+								})
+							})
 						})
 					}
+				})
+			},
+			partFourteen: () => {
+				return new Promise((resolve) => {
+					this.checkDelay().then((isDone) => {
+						console.warn(isDone);
+					})
 				})
 			}
 		}
@@ -434,17 +465,21 @@ export default class ActOne extends Component {
 		})
 	}
 
-	storeBoolean(name, val) {
+	storeValue(name, val) {
 		return new Promise((resolve) => {
 			AsyncStorage.setItem(name, JSON.stringify({value: val})).then(resolve)
 		})
 	}
 
-	getBoolean(name, val) {
+	getValue(name) {
 		return new Promise((resolve) => {
 			AsyncStorage.getItem(name).then((data) => {
 				let res = JSON.parse(data);
-				resolve(res.value);
+				if (res !== null) {
+					resolve(res.value);
+				} else {
+					resolve(null);
+				}
 			})
 		})
 	}
@@ -464,10 +499,11 @@ export default class ActOne extends Component {
 
 	setDelay(timeInHours) {
 		return new Promise((resolve) => {
-			let startDate = Date.now();
-			let endDate = startDate;
-			endDate.setHours(endDate.getHours() + timeInHours);
-			AsyncStorage.setItem('timeDelay', JSON.stringify({startDate, endDate})).then(resolve);
+			let startDate = new Date(), endDate = new Date();
+			endDate.setMinutes(endDate.getMinutes() + timeInHours);
+			AsyncStorage.setItem('timeDelay', JSON.stringify({startDate: startDate.getTime(), endDate: endDate.getTime()})).then(() => {
+				this.storeValue('timeDelayEnabled', true).then(resolve)
+			});
 		})
 	}
 
@@ -476,7 +512,9 @@ export default class ActOne extends Component {
 			AsyncStorage.getItem('timeDelay').then((data) => {
 				let res = JSON.parse(data);
 				if (Date.now() >= res.endDate) {
-					resolve(true);
+					this.storeValue('timeDelayEnabled', false).then(() => {
+						resolve(true);
+					})
 				} else {
 					resolve(false);
 				}
@@ -521,6 +559,21 @@ export default class ActOne extends Component {
 			} else {
 				return;
 			}
+		}, config.dev ? 500 : interval)
+	}
+
+	aikoSpeakDisappearing(part, interval, cb) {
+		this.setState({aikoActive: true, userChoice: false});
+		if (this.state.prev === 'user') {
+			this.state.script.push(<AikoMessage message={part} key={Math.random()} sender="Aiko"></AikoMessage>)
+		} else {
+			this.state.script.push(<AikoRepeatingMessage message={part} key={Math.random()}></AikoRepeatingMessage>)
+		}
+		this.setState({prev: 'aiko', script: this.state.script});
+		setTimeout(() => {
+			this.state.script.pop();
+			this.setState({aikoActive: false, script: this.state.script});
+			cb();
 		}, interval)
 	}
 
@@ -545,7 +598,7 @@ export default class ActOne extends Component {
 	componentDidMount() {
 		//TODO:
 		let dev = true;
-		let startFrom = 6;
+		let startFrom = 0;
 		if (dev) {
 			AsyncStorage.setItem('countPart', '{}');
 			AsyncStorage.setItem('history', '{}');
@@ -586,7 +639,7 @@ export default class ActOne extends Component {
 				}
 			})
 		}
-		AppState.addEventListener('change', this._handleAppStateChange);
+		AppState.addEventListener('change', this._handleAppStateChange.bind(this));
 	}
 
 	componentWillUnmount() {
@@ -615,22 +668,53 @@ export default class ActOne extends Component {
 			})
 		} else if (nextState == 'active') {
 			//Cancel notifications
+			this.getValue('timeDelayEnabled').then((value) => {
+				if (value) {
+					AsyncStorage.getItem('countPart').then((jsonResult) => {
+						let partCount = JSON.parse(jsonResult);
+							this.playScene(partCount.part);
+					})
+				}
+			})
 			PushNotification.cancelLocalNotifications({type: 'alertAwayPlayer'});
 		}
 	}
 
 	render() {
+		let bottom;
+		//Horrible formatting I know
+		if (this.state.aikoActive) {
+			bottom = <View><Display enable={this.state.aikoActive} style={styles.spinnerView} enter="fadeIn" exit="fadeOut" defaultDuration={500}>
+			<Spinner type="ThreeBounce" size={70} color="#141e2d"/>
+			<Text>{this.state.score}  {this.state.script.length}</Text>
+		</Display>
+		<Display enable={!this.state.aikoActive} style={styles.spinnerView} enter="fadeIn" exit="fadeOutDown" defaultDuration={500}>
+			<Choices choices={this.state.choices} />
+		</Display></View>
+		} else {
+			bottom = <View>
+						<Display enable={!this.state.aikoActive} style={styles.spinnerView} enter="fadeIn" exit="fadeOutDown" defaultDuration={500}>
+			<Choices choices={this.state.choices} />
+		</Display>
+				<Display enable={this.state.aikoActive} style={styles.spinnerView} enter="fadeIn" exit="fadeOut" defaultDuration={500}>
+			<Spinner type="ThreeBounce" size={70} color="#141e2d"/>
+			<Text>{this.state.score}  {this.state.script.length}</Text>
+		</Display>
+</View>
+		}
+
 			return (
 				<View style={styles.container}>
 				<ScrollView style={styles.forefront} contentContainerStyle={styles.contentView} ref={ref => this.scrollView = ref} onContentSizeChange={(contentWidth, contentHeight)=>{ this.scrollView.scrollToEnd({animated: true}); }}>
 				  {this.state.script}
-				   	<Display enable={this.state.aikoActive} style={styles.spinnerView} enter="fadeInUp" exit="fadeOut" defaultDuration={500}>
+				   	{/* <Display enable={this.state.aikoActive} style={styles.spinnerView} enter="fadeInUp" exit="fadeOut" defaultDuration={1500}>
 				 		<Spinner type="ThreeBounce" size={70} color="#141e2d"/>
 						 <Text>{this.state.score}  {this.state.script.length}</Text>
 				 	</Display>
-					 <Display enable={!this.state.aikoActive} style={styles.spinnerView} enter="fadeInUp" exit="fadeOutDown" defaultDuration={500}>
+					 <Display enable={!this.state.aikoActive} style={styles.spinnerView} enter="fadeInUp" exit="fadeOutDown" defaultDuration={1500}>
 					 	<Choices choices={this.state.choices} />
-				 	</Display>
+					 </Display> */}
+					 {bottom}
 					 <View style={styles.space}></View>
 				</ScrollView>
 			  </View>
@@ -724,6 +808,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center'
 	},
 	space: {
-		paddingTop: 60
+		paddingTop: 60,
+		zIndex: -1
 	}
 })

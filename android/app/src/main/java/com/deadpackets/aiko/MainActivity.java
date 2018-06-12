@@ -1,4 +1,4 @@
-package com.aiko;
+package com.deadpackets.aiko;
 
 import com.facebook.react.ReactActivity;
 import com.react.rnspinkit.RNSpinkitPackage;
