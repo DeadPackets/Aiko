@@ -1,6 +1,7 @@
 package com.deadpackets.aiko;
 
 import com.facebook.react.ReactActivity;
+import com.RNFetchBlob.RNFetchBlobPackage;
 import com.react.rnspinkit.RNSpinkitPackage;
 import com.ninty.system.setting.SystemSettingPackage;
 import com.rt2zz.reactnativecontacts.ReactNativeContacts;

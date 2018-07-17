@@ -1,57 +1,84 @@
 import React from 'react';
-import { StyleSheet, Text, View, StatusBar, Button } from 'react-native';
+import { StyleSheet, Text, View, Image, Button } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 
 class AikoMessage extends React.Component {
 	render() {
 	  return (
-		<Animatable.View animation="fadeInRight" duration={1000} style={styles.aikoMessage}>
-		  <Text style={styles.sender}>{this.props.sender}</Text>
-		  <View style={styles.messageInner}>
-			<Text style={styles.messageText}>{this.props.message}</Text>
-		  </View>
-		</Animatable.View>
-	  );
-	}
+				<Animatable.View animation="fadeInRight" duration={1000} style={styles.aikoMessage}>
+					<Text style={styles.sender}>{this.props.sender}</Text>
+					<View style={styles.messageInner}>
+					<Text style={styles.messageText} numberOfLines={2} adjustsFontSizeToFit={true}>{this.props.message}</Text>
+					</View>
+				</Animatable.View>
+	  	);
+		}
   }
   
   class AikoRepeatingMessage extends React.Component {
 	render() {
 	  return (
-		<Animatable.View animation="fadeInRight" duration={1000} style={styles.aikoMessageRepeat}>
-		  <View style={styles.messageInner}>
-			<Text style={styles.messageText}>{this.props.message}</Text>
-		  </View>
-		</Animatable.View>
-	  );
+				<Animatable.View animation="fadeInRight" duration={1000} style={styles.aikoMessageRepeat}>
+					<View style={styles.messageInner}>
+					<Text style={styles.messageText} numberOfLines={2} adjustsFontSizeToFit={true}>{this.props.message}</Text>
+					</View>
+				</Animatable.View>
+	  	);
+		}
 	}
-  }
+
+	class AikoImage extends React.Component {
+		render() {
+			return (
+					<Animatable.View animation="fadeInRight" duration={1000} style={styles.aikoMessageRepeat}>
+							<View style={styles.imageInner}>
+								<Image resizeMode="contain" resizeMethod="scale" style={{height: 500, width: 250}} source={{uri: this.props.image}} />
+							</View>
+					</Animatable.View>
+				);
+			}
+		}
+	
+	class AikoDeletedMessage extends React.Component {
+		render() {
+			return (
+					<Animatable.View animation="fadeInRight" duration={1000} style={styles.aikoMessageRepeat}>
+						<View style={styles.messageInner}>
+						<Text style={styles.messageDeletedText}>{this.props.message}</Text>
+						</View>
+					</Animatable.View>
+				);
+			}
+		}
   
   class Choices extends React.Component {
 	render() {
 	  return(
-		<Animatable.View animation="fadeIn" duration={2000} style={styles.choices}>
-			{this.props.choices}
-		</Animatable.View>
-	  )
+				<Animatable.View animation="fadeIn" duration={2000} style={styles.choices}>
+					{this.props.choices}
+				</Animatable.View>
+	  	)
+		}
 	}
-  }
+	
 	class UserMessage extends React.Component {
 		render() {
 			return (
-			<Animatable.View animation="fadeInLeft" duration={1000} style={styles.userMessage}>
-				<Text style={styles.sender}>{this.props.sender}</Text>
-				<View style={styles.userMessageInner}>
-				<Text style={styles.userMessageText}>{this.props.message}</Text>
-				</View>
-			</Animatable.View>
-			);
-		}
+					<Animatable.View animation="fadeInLeft" duration={1000} style={styles.userMessage}>
+						<Text style={styles.sender}>{this.props.sender}</Text>
+						<View style={styles.userMessageInner}>
+						<Text style={styles.userMessageText}>{this.props.message}</Text>
+						</View>
+					</Animatable.View>
+				);
+			}
 		}
 
   export {
-	  AikoMessage,
+		AikoMessage,
 		AikoRepeatingMessage,
+		AikoDeletedMessage,
+		AikoImage,
 		UserMessage,
 	  Choices
   }
@@ -101,6 +128,16 @@ const styles = StyleSheet.create({
 	  paddingBottom: 10,
 	  paddingRight: 20
 	},
+	imageInner: {
+	  backgroundColor: '#FFFFFF',
+	  borderRadius: 10,
+	  flexDirection: 'row',
+	  alignItems: 'center',
+	  paddingLeft: 20,
+	  paddingTop: 10,
+	  paddingBottom: 10,
+	  paddingRight: 20
+	},
 	userMessageInner: {
 	  backgroundColor: '#535e69',
 	  borderRadius: 10,
@@ -114,8 +151,13 @@ const styles = StyleSheet.create({
 	  paddingRight: 20
 	},
 	messageText: {
-	  color: '#535e69',
+		color: '#535e69',
 	  fontWeight: "400"
+	},
+	messageDeletedText: {
+		color: '#9eaec1',
+		fontStyle: 'italic',
+		fontWeight: 'bold'
 	},
 	userMessageText: {
 	  color: '#FFFFFF',

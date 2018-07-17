@@ -1,0 +1,11 @@
+VALUES
+--------
+consideredAikoFriend - [true, false] Whether the player told Aiko they are friends
+insultAikoCallName - [true, null] Whether the player insulted Aiko when she asked to call them by name
+letAikoCallName - [true, false] Whether Aiko is allowed to address the player by name
+preferredName - [string] The name the player prefers to be called
+thinksOfDeath - ["sad", "inevitable", "perspective"] What the player thinks of death
+userInfo - [object] Information about the user
+locationPerm - [true, false] Whether we have location permissions or not
+photosPermission - [true, null] Whether we have photo permissions or not
+storagePermission [true, false] Whether we have storage permission

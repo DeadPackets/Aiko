@@ -14,8 +14,8 @@ import {
 } from 'react-native';
 
 import * as Animatable from 'react-native-animatable';
+import { systemWeights } from 'react-native-typography'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import FAIcon from 'react-native-vector-icons/FontAwesome';
 import Swiper from 'react-native-swiper';
 import { Button } from 'react-native-elements';
 import Permissions from 'react-native-permissions';
@@ -104,9 +104,9 @@ export default class Intro extends Component {
 					</Animatable.View>
 					<Animatable.View animation={"fadeInUp"} delay={1000} duration={3000} style={styles.container}>
 						<Text style={styles.mainTitle}>Enjoy!</Text>
-						<Text style={styles.paragraph}>Aiko is our state of the art chatbot AI that will interact with you in a realistic way that makes you feel like you are talking to a real person!</Text>
-						<Text style={styles.paragraph}>With built in abilities to understand conversations, Aiko can understand your emotions and tone of voice and respond accordingly.</Text>
-						<Text style={styles.paragraph}>And now with her being integrated into your mobile device, Aiko can understand the world around you even better now.</Text>
+						<Text style={styles.paragraphSmall}>Aiko is our state of the art chatbot AI that will interact with you in a realistic way that makes you feel like you are talking to a real person!</Text>
+						<Text style={styles.paragraphSmall}>With built in abilities to understand conversations, Aiko can understand your emotions and tone of voice and respond accordingly.</Text>
+						<Text style={styles.paragraphSmall}>And now with her being integrated into your mobile device, Aiko can understand the world around you even better now.</Text>
 					</Animatable.View>
 					<Animatable.View animation={"fadeInUp"} delay={1000} duration={3000} style={styles.container}>
 						<Text style={styles.mainTitle}>Privacy first.</Text>
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
 		marginTop: 50,
 		fontSize: 64,
 		color: '#ffffff',
-		fontWeight: '200'
+		...systemWeights.thin,
 	  },
 	  mainTitleAiko: {
 		marginTop: 50,
@@ -167,9 +167,18 @@ const styles = StyleSheet.create({
 		  textAlign: 'center',
 		  marginTop: 30,
 		  paddingRight: 50,
+		  ...systemWeights.light,
 		  paddingLeft: 50,
 		  fontSize: 22,
 		  color: '#FFF',
-		  fontWeight: '200'
-	  }
+	  },
+	  paragraphSmall: {
+		textAlign: 'center',
+		marginTop: 30,
+		paddingRight: 50,
+		...systemWeights.light,
+		paddingLeft: 50,
+		fontSize: 18,
+		color: '#FFF',
+	}
   });
